@@ -292,8 +292,7 @@ fn main() {
 }
 ```
 There is nothing magic or reserved about the name `new` here. Note that it's accessed
-using a C++-like notation (what C++ would call in its usual clunky way a 'static member
-function'.)
+using a C++-like notation using double-colon `::`.
 
 Here's a another `Person` method, but with a _reference self_ argument:
 
@@ -391,14 +390,14 @@ error[E0106]: missing lifetime specifier
   |        ^ expected lifetime parameter
 ```
 To understand the complaint, you have to see the problem from the point of view of Rust.
-It will not allow a reference to be stored without knowing its lifetime. Because all
-references are borrowed from some value, and values have lifetimes. The lifetime of
+It will not allow a reference to be stored without knowing its lifetime. All
+references are borrowed from some value, and all values have lifetimes. The lifetime of
 a reference cannot be longer than the lifetime of that value.
-Rust cannot allow
+Rust cannot allow 
 a situation where that reference could suddenly become invalid.
 
-Now, there are basically two kinds of string slices; those that refer to _string literals_
-like "hello" and those that borrow from `String` values. String literals exist for the duration
+Now, string slices borrow from _string literals_
+like "hello" or from `String` values. String literals exist for the duration
 of the whole program, which is called the 'static' lifetime.
 
 So this works - we assure Rust that the string slice always refers to such static strings:
@@ -550,7 +549,7 @@ This is a case where Rust needs some type guidance - I specifically want a vecto
 of references to anything that implements `Show`.  Now note that `i32` and `f64`
 have no relationship to each other, but they both understand the `show` method
 because they both implement the same trait. This method is _virtual_, because
-the actual function has different code for different types, and yet the correct
+the actual method has different code for different types, and yet the correct
 method is invoked based on _runtime_ information. These references
 are called [trait objects](https://doc.rust-lang.org/stable/book/trait-objects.html).
 
@@ -569,7 +568,7 @@ it keeps the state for the iteration (like next index and so forth.) The data th
 is being iterated over doesn't change usually, (But see `std::vec::Vec::drain` for an
 interesting iterator that does modify its data.)
 
-And here is the formal definition: the `Iterator` trait:
+And here is the formal definition: the [Iterator trait](https://doc.rust-lang.org/std/iter/trait.Iterator.html).
 
 ```rust
 trait Iterator {
@@ -580,14 +579,14 @@ trait Iterator {
 ```
 Here we meet an [associated type](https://doc.rust-lang.org/stable/book/associated-types.html) of the `Iterator` trait.
 This trait must work for any type, so you must specify that return type somehow.
-The method can then be written without using a
+The method `next` can then be written without using a
 particular type - instead it refers to that type parameter's `Item` via `Self`.
 
 The iterator trait for `f64` is written `Iterator<Item=f64>`, which can be read as
 "an Iterator with its associated type Item set to f64".
 
-The `...` refers to the _default methods_ of `Iterator`. You only need to define `Item`
-and `next`, and the default methods are defined for you.
+The `...` refers to the _provided methods_ of `Iterator`. You only need to define `Item`
+and `next`, and the provided methods are defined for you.
 
 ```rust
 // trait3.rs
@@ -730,7 +729,7 @@ good idea, because the baroque way C++ resolves names is a little too clever for
 humans. (And there is a shortcut, as we will see.)
 
 Punctuation matters. Note that `*` before `self`. It's easy to forget, because often
-Rust will assume it (we said `self.first_name`, not `*self.first_name`). However,
+Rust will assume it (we said `self.first_name`, not `(*self).first_name`). However,
 matching is a more exact business. Leaving it out would give a whole spew of messages,
 which boil down to this type mismatch:
 
@@ -900,8 +899,8 @@ There are things you cannot do with borrowed references. Rust is not letting
 you _extract_ the string contained in the original value. It did not complain about `Number`
 because it's happy to copy `f64`, but `String` does not implement `Copy`.
 
-I mentioned earlier that `match` is picky about _exact_ types
-- here we follow the hint and things will work; now we are just borrowing a reference
+I mentioned earlier that `match` is picky about _exact_ types;
+here we follow the hint and things will work; now we are just borrowing a reference
 to that contained string.
 
 ```rust
@@ -920,12 +919,12 @@ fn dump(v: &Value) {
 ```
 Before we move on, filled with the euphoria of a successful Rust compilation, let's
 pause a little. `rustc` is unusually good at generating errors that have enough
-context for a human to fix the error without necessarily _understanding_ the error.
+context for a human to _fix_ the error without necessarily _understanding_ the error.
 
 The issue is a combination of the exactness of matching, with the determination of the
 borrow checker to foil any attempt to break the Rules.  One of those Rules is that
 you cannot yank out a value which belongs to some owning type. Some knowledge of
-C++ is a hindrance here, since `c++` will copy its way out of the problem, whether that
+C++ is a hindrance here, since C++ will copy its way out of the problem, whether that
 copy even _makes sense_.  You will get exactly the same error if you try to pull out
 a value from a vector, say with `*v[0]` (`*` because indexing returns references.)
 It will simply not let you do this. (Sometimes `clone` isn't such a bad solution to this.)
@@ -1057,7 +1056,8 @@ If the type _was_ `&str` then we match it directly:
 
 What applies to `match` applies to `if let`. This is a cool example, since if we
 get a `Some`, we can match inside it and only extract the string from the tuple. So it
-isn't necessary to have nested `if let` statements here.
+isn't necessary to have nested `if let` statements here. We use `_` because we aren't interested
+in the first part of the tuple.
 
 ```rust
     let ot = Some((2,"hello".to_string());
@@ -1134,7 +1134,7 @@ So, the first call fixes the type of the argument `x`. It's equivalent to this f
 
 ```rust
     fn f (x: i32) -> i32 {
-        x*x
+        x * x
     }
 ```
 
@@ -1173,8 +1173,8 @@ But uncomment `get` and you get a borrowing error:
 
 Now, what's the type of `lin`? Only `rustc` knows. Exactly the same situation applies
 to C++ lambdas, and for exactly the same version. Under the hood, a closure is a _struct_
-that implements the call operator. All closures are unique types
-- but they have traits in common.
+that implements the call operator. All closures are unique types,
+ but they have traits in common.
 
 So even though we don't know the exact type, we know the generic constraint:
 
@@ -1389,6 +1389,8 @@ into a `&String` which _does_ match.
 
 ```rust
 for s in vec.iter().filter(|x: &&String| *x == "one") {...}
+// same as
+for s in vec.iter().filter(|x| *x == "one") {...}
 ```
 
 If you leave out the explicit type, you can modify the argument so that the type of `s`
@@ -1510,13 +1512,13 @@ on the right. There may be no node on the left, so then `set_left` and so forth.
     fn insert(&mut self, data: &str) {
         if data < &self.payload {
             match self.left {
-            Some(ref mut n) => n.insert(data),
-            None => self.set_left(Self::new(data)),
+                Some(ref mut n) => n.insert(data),
+                None => self.set_left(Self::new(data)),
             }
         } else {
             match self.right {
-            Some(ref mut n) => n.insert(data),
-            None => self.set_right(Self::new(data)),
+                Some(ref mut n) => n.insert(data),
+                None => self.set_right(Self::new(data)),
             }
         }
     }
@@ -1631,8 +1633,8 @@ note: an implementation of `std::ops::Mul` might be missing for `T`
   |     ^
 ```
 Following the advice of the compiler, let's _constrain_ that type parameter using
-that trait, which is used to implement the multiplication operator `*`:
-(`T: Mul` means 'any type T that implements Mul')
+[that trait](https://doc.rust-lang.org/std/ops/trait.Mul.html), which is used to implement the multiplication operator `*`:
+ (`T: Mul` means 'any type T that implements Mul')
 
 ```rust
 use std::ops::Mul;

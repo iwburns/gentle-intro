@@ -77,7 +77,7 @@ fn main() {
 }
 ```
 
-Which won't produce any input. But change 42 to 40:
+Which won't produce any output. But change 42 to 40:
 
 ```
 thread 'main' panicked at
@@ -499,7 +499,7 @@ What _are_ used often are _slices_. You can think of these as _views_ into
 an underlying array of values. They otherwise behave very much like an array, and
 _know their size_, unlike those dangerous animals C pointers.
 
-Note two important things here - how to write an slice type, and that
+Note two important things here - how to write a slice's type, and that
 you have to use `&` to pass it to the function.
 
 ```rust
@@ -664,10 +664,11 @@ If you were to _unwrap_ `last`, you would get a panic. But at least you can call
         -1
     };
 ```
-Which is long-winded, so there's a shortcut:
+Which is long-winded, so there's a shortcut (the `&` is because `get` always 
+returns a reference):
 
 ```rust
-    let last = slice.get(5).unwrap_or(-1);
+    let last = slice.get(5).unwrap_or(&-1);
 ```
 You can think of `Option` as a box which may contain a value, or nothing (`None`).
 (It is called `Maybe` in Haskell). It may contain _any_ kind of value, which is
